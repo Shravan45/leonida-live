@@ -342,9 +342,33 @@ export default function Home() {
         <span className="font-display bg-gradient-to-r from-[var(--neon-pink)] to-[var(--neon-cyan)] bg-clip-text text-base leading-none tracking-wider text-transparent sm:text-xl">
           LEONIDA LIVE
         </span>
-        <span className="text-[10px] leading-none text-white/35 sm:text-xs">
-          by Shravan Ramdurg
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] leading-none text-white/35 sm:text-xs">
+            by Shravan Ramdurg
+          </span>
+          <a
+            href="https://www.linkedin.com/in/shravanramdurg/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Shravan Ramdurg on LinkedIn"
+            className="text-white/35 transition-colors hover:text-[var(--neon-cyan)]"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28ZM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13ZM7.12 20.45H3.56V9h3.56v11.45Z" />
+            </svg>
+          </a>
+          <a
+            href="https://github.com/Shravan45"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Shravan Ramdurg on GitHub"
+            className="text-white/35 transition-colors hover:text-[var(--neon-cyan)]"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.58 2 12.2c0 4.5 2.87 8.32 6.84 9.67.5.1.68-.22.68-.5v-1.94c-2.78.62-3.37-1.36-3.37-1.36-.46-1.2-1.11-1.52-1.11-1.52-.9-.63.07-.62.07-.62 1 .07 1.53 1.05 1.53 1.05.9 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.72 0 0 .84-.28 2.75 1.05a9.3 9.3 0 0 1 5 0c1.91-1.33 2.75-1.05 2.75-1.05.55 1.42.2 2.46.1 2.72.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.79-4.57 5.05.36.32.68.94.68 1.9v2.82c0 .28.18.61.69.5A10.03 10.03 0 0 0 22 12.2C22 6.58 17.52 2 12 2Z" />
+            </svg>
+          </a>
+        </div>
       </div>
 
       <div className="absolute right-3 top-3 z-[1000] flex items-center gap-2 rounded-full border border-white/10 bg-[#0f0a1a]/85 px-3 py-1.5 text-xs font-medium text-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur sm:px-3.5 sm:text-sm">
