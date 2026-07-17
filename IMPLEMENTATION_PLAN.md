@@ -141,7 +141,7 @@ production deployment yet to distinguish it from. Later deploys with
 plain `vercel` should behave as normal preview deploys; use
 `vercel --prod` to intentionally promote to production.
 
-## Phase 6 — Identity, AI moderation, admin (code done, browser-verification pending)
+## Phase 6 — Identity, AI moderation, admin ✅ done
 
 User-requested additions beyond the original MVP scope. Decisions locked
 in with the user before starting:
@@ -199,9 +199,8 @@ in with the user before starting:
 - [x] Updated `handleSubmitPin` in `page.tsx` to POST to `/api/pins`
       instead of calling `supabase.insert()` directly; the 422 moderation
       message surfaces through the existing `submitError` UI.
-- [ ] Not yet verified through the actual browser UI (pin drop showing
-      a username, abusive content actually getting blocked) — only the
-      Anthropic API calls themselves were live-tested directly.
+- [x] Verified in browser: a clearly harassing/threatening test pin was
+      correctly rejected with the content-guidelines message.
 
 ### 6c. Admin moderation + email-on-new-pin
 
@@ -214,16 +213,13 @@ in with the user before starting:
 - [x] `/admin` page (`src/app/admin/page.tsx`): email/password sign-in
       (coexists fine with the anonymous-by-default flow — signing in
       replaces the anonymous session), then a list of all pins with a
-      delete button for confirmed admins only. **Not yet verified through
-      the browser** (sign-in, pins list, delete) — code deployed, untested.
+      delete button for confirmed admins only. Verified in browser:
+      sign-in, pins list, and delete all work.
 - [x] Email notification: `after insert` trigger on `pins` using `pg_net`
       (`net.http_post`) calling `/api/webhooks/new-pin`, verified via a
       shared-secret header (stored in Supabase Vault, not committed —
-      repo is public), which sends the email via Resend. **Confirmed
-      working**: direct curl tests against both local dev and the
-      deployed production route succeeded and delivered real emails.
-      The actual DB-trigger path (real pin insert → trigger → email)
-      is still unverified pending the user's next test.
+      repo is public), which sends the email via Resend. Confirmed
+      working end-to-end: a real pin drop triggered a real email.
 - [x] User created a Resend account + API key; `RESEND_API_KEY`,
       `ADMIN_EMAIL`, `WEBHOOK_SECRET` set in `.env.local` and all three
       Vercel environments.
@@ -298,7 +294,16 @@ plain `vercel` should behave as normal preview deploys; use
   above), checked the Leaflet client bundle (~54KB gzipped, not
   bloated), and documented Supabase Realtime's connection limits (Free
   tier = 200 concurrent, upgrade to Pro before a real launch push).
-  **All planned phases (0–5) are now done.** Next: no fixed plan —
-  whatever the user wants to add/improve next (see Phase 3's "not yet
-  verified on a real device" note as one open thread if nothing else
-  comes up).
+  **All planned phases (0–5) are now done.** Then the user requested
+  Phase 6 (identity, AI moderation, admin) — see Stack decisions and
+  Phase 6 above for the full design and the two provider pivots
+  (Vercel AI Gateway → OpenAI → Anthropic direct) forced by credit-card/
+  verification requirements at each prior option. Also fixed a real bug
+  found along the way: `.env.local.example` had been silently
+  gitignored since the first commit. Shipped and fully verified in
+  browser: usernames show on pins, abusive test content gets blocked,
+  admin sign-in/pins-list/delete all work, and a real pin drop
+  triggered a real notification email. **Phase 6 done.** Next: no fixed
+  plan — whatever the user wants to add/improve next (Phase 3's "not
+  yet verified on a real device" mobile-layout note is still the one
+  open thread if nothing else comes up).
