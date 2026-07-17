@@ -7,6 +7,7 @@ import NewPinForm from "@/components/NewPinForm";
 import CategoryFilter from "@/components/CategoryFilter";
 import UsernameBadge from "@/components/UsernameBadge";
 import OnboardingModal from "@/components/OnboardingModal";
+import AppIntro from "@/components/AppIntro";
 import type { Pin, PinCategory } from "@/lib/types";
 
 // Keep in sync with the 30s window enforced server-side in
@@ -43,6 +44,14 @@ export default function Home() {
   const [lastDropAt, setLastDropAt] = useState<number | null>(null);
   const [myName, setMyName] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  // Expanded by default on every load (not persisted) — collapsing is a
+  // per-session preference, not something worth a localStorage/hydration
+  // dance for.
+  const [introCollapsed, setIntroCollapsed] = useState(false);
+
+  const toggleIntro = useCallback(() => {
+    setIntroCollapsed((prev) => !prev);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -338,11 +347,41 @@ export default function Home() {
         <OnboardingModal suggestedName={myName} onConfirm={handleOnboardingConfirm} />
       )}
 
-      <div className="absolute left-3 top-3 z-[1000] flex flex-col gap-0.5 rounded-2xl border border-white/10 bg-[#0f0a1a]/85 px-3 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur sm:px-4">
-        <span className="font-display bg-gradient-to-r from-[var(--neon-pink)] to-[var(--neon-cyan)] bg-clip-text text-base leading-none tracking-wider text-transparent sm:text-xl">
-          LEONIDA LIVE
-        </span>
-        <div className="flex items-center gap-1.5">
+      <div className="absolute left-3 top-3 z-[1000] flex w-64 max-w-[calc(100vw-1.5rem)] flex-col gap-0.5 rounded-2xl border border-white/10 bg-[#0f0a1a]/85 px-3 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur sm:px-4">
+        <button
+          type="button"
+          onClick={toggleIntro}
+          className="flex items-center justify-between gap-2"
+          aria-expanded={!introCollapsed}
+        >
+          <span className="font-display bg-gradient-to-r from-[var(--neon-pink)] to-[var(--neon-cyan)] bg-clip-text text-base leading-none tracking-wider text-transparent sm:text-xl">
+            LEONIDA LIVE
+          </span>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+            className={`shrink-0 text-white/40 transition-transform ${introCollapsed ? "" : "rotate-180"}`}
+          >
+            <path
+              d="M6 9l6 6 6-6"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+
+        {!introCollapsed && (
+          <div className="pt-2">
+            <AppIntro />
+          </div>
+        )}
+
+        <div className="mt-1 flex items-center gap-1.5">
           <span className="text-[10px] leading-none text-white/35 sm:text-xs">
             by Shravan Ramdurg
           </span>
