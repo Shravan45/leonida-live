@@ -119,6 +119,77 @@ feature work — the app can't actually talk to Supabase yet.
       than the Supabase client chunk (~65KB gzip). Total client JS across
       all chunks is ~304KB gzipped. Nothing bloated, no action needed.
 
+## Phase 6 — Identity, AI moderation, admin (not started)
+
+User-requested additions beyond the original MVP scope. Decisions locked
+in with the user before starting:
+- Moderation **hard-blocks at submission** (never lands in the DB), rather
+  than posting-then-flagging.
+- Moderation scope is **abusive/hateful content only** — explicitly *not*
+  filtering "political" content, since GTA itself satirizes real-world
+  politics and a strict filter would over-block legitimate pins.
+- Admin is a **real Supabase email/password account** (not a shared
+  passcode), gated by an `admins` allowlist table — regular visitors stay
+  anonymous.
+- Email-on-new-pin uses **Resend**.
+
+### 6a. Reddit-style anonymous usernames
+
+- [ ] Migration `0004_profiles.sql`: `profiles` table (`id` → `auth.users`,
+      `display_name`), publicly readable via RLS. `generate_random_username()`
+      SQL function (adjective+noun+number). `handle_new_user()` trigger on
+      `auth.users` insert auto-populates a profile. Backfill any existing
+      users without one.
+- [ ] Denormalize onto pins: add `pins.author_name`, populated by a
+      `before insert` trigger from the pin's `created_by` profile — keeps
+      it present in `postgres_changes` realtime payloads without a join.
+- [ ] Show `author_name` in the map popup; update `Pin` type.
+
+### 6b. AI moderation on pin submission
+
+- [ ] Move pin creation from a direct client-side `supabase.insert()` to a
+      server-side Route Handler (`/api/pins`, POST) — required because the
+      moderation call needs a server context (can't safely call an LLM
+      with a secret-backed gateway from the browser), and because a hard
+      block must happen *before* the row is ever written.
+- [ ] Route handler: read the authenticated user from the server Supabase
+      client (cookies), classify `title`+`description` via the AI SDK
+      (`generateText` + `Output.object()` + zod schema
+      `{ flagged: boolean, reason?: string }`), model
+      `anthropic/claude-haiku-4.5` via Vercel AI Gateway (plain model
+      string, no provider package — auth via the `VERCEL_OIDC_TOKEN`
+      already in `.env.local` from `vercel link`, no extra API key
+      expected to be needed). Abusive/hateful only, not political.
+      If flagged, return 422 with a user-facing message; otherwise insert
+      via the server client (RLS/rate-limit trigger/author_name trigger
+      all still apply normally).
+- [ ] Update `handleSubmitPin` in `page.tsx` to POST to `/api/pins`
+      instead of calling `supabase.insert()` directly; surface the 422
+      moderation message through the existing `submitError` UI.
+
+### 6c. Admin moderation + email-on-new-pin
+
+- [ ] Migration `0005_admin.sql`: `admins` table (`user_id` → `auth.users`,
+      self-select RLS policy so a client can check "am I admin"), plus a
+      `delete` RLS policy on `pins` for admins.
+- [ ] User creates their own admin account in the Supabase dashboard
+      (Authentication → Users → Add user, email+password), then runs a
+      one-line `insert into admins (user_id) values ('<uuid>');` — guided
+      step, not automatable from here.
+- [ ] `/admin` page: email/password sign-in (`supabase.auth.signInWithPassword`,
+      coexists fine with the anonymous-by-default flow — signing in
+      replaces the anonymous session), then a list of all pins with a
+      delete button for confirmed admins only.
+- [ ] Email notification: Postgres `after insert` trigger on `pins` using
+      the `pg_net` extension (`net.http_post`) to call a new
+      `/api/webhooks/new-pin` Route Handler, verified via a shared-secret
+      header, which sends the email via Resend. Chosen over client-side
+      email sending or a dashboard-configured webhook so the whole thing
+      ships as a migration + one route, no manual dashboard webhook setup.
+- [ ] User creates a Resend account + API key, and sets
+      `RESEND_API_KEY`, `ADMIN_EMAIL`, `WEBHOOK_SECRET` in `.env.local`
+      and Vercel env vars (guided step).
+
 ## Phase 5 — Deploy ✅ done
 
 - [x] Linked project to Vercel (`vercel link --yes`) — project
