@@ -57,13 +57,16 @@ feature work — the app can't actually talk to Supabase yet.
 - [x] Verified live: pin dropped in an incognito tab appeared in a
       logged-in tab without a refresh
 
-## Phase 2 — Presence (not started)
+## Phase 2 — Presence ✅ done
 
-- [ ] Supabase Realtime Presence channel keyed by the anonymous
-      `user.id`
-- [ ] Show a "N live" indicator somewhere in the UI
-- [ ] (Stretch) show rough cursor positions or last-clicked location of
-      other online users on the map
+- [x] Supabase Realtime Presence channel (`online-users`) keyed by the
+      anonymous `user.id`, so multiple tabs/reconnects from the same
+      user don't inflate the count
+- [x] "N live" indicator in the top-right corner of the map
+- [x] Verified with 3 windows (1 regular + 2 incognito) — correctly
+      showed 2, since Chrome's incognito windows share one session
+- [ ] (Stretch, deferred) show rough cursor positions or last-clicked
+      location of other online users on the map
 
 ## Phase 3 — Map & UX polish (not started)
 
@@ -117,5 +120,9 @@ feature work — the app can't actually talk to Supabase yet.
   Also added Miami-only map bounds. Then shipped Phase 1 (realtime pin
   sync) — required manually running the `0002_realtime.sql` publication
   migration in the SQL Editor since it wasn't applied automatically.
-  Verified with two concurrent browser sessions. Next: Phase 2
-  (presence).
+  Verified with two concurrent browser sessions. Then shipped Phase 2
+  (presence) — a live-user-count badge via Supabase Realtime Presence,
+  keyed by anon user id. Verified across 3 windows (correctly showed 2,
+  since Chrome incognito windows share one session). Next: Phase 3
+  (map/UX polish) or Phase 5 (deploy to Vercel) — worth deploying soon
+  to get a real production URL before piling on more features.

@@ -21,6 +21,7 @@ export default function Home() {
   const [votedPinIds, setVotedPinIds] = useState<Set<string>>(new Set());
   const [draft, setDraft] = useState<{ lat: number; lng: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [onlineCount, setOnlineCount] = useState(1);
 
   useEffect(() => {
     if (!user) return;
@@ -75,6 +76,30 @@ export default function Home() {
         },
       )
       .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, user]);
+
+  // Presence: track this anonymous user on a shared channel keyed by their
+  // user id, so tabs/reconnects from the same user don't inflate the count.
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase.channel("online-users", {
+      config: { presence: { key: user.id } },
+    });
+
+    channel
+      .on("presence", { event: "sync" }, () => {
+        setOnlineCount(Object.keys(channel.presenceState()).length);
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await channel.track({ online_at: new Date().toISOString() });
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -172,6 +197,10 @@ export default function Home() {
 
   return (
     <div className="relative h-screen w-full">
+      <div className="absolute right-3 top-3 z-[1000] flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-xs font-medium text-neutral-700 shadow-sm backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/90 dark:text-neutral-200">
+        <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+        {onlineCount} live
+      </div>
       <Map pins={pins} votedPinIds={votedPinIds} onMapClick={handleMapClick} onUpvote={handleUpvote} />
       {draft && (
         <NewPinForm
