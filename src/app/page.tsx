@@ -42,6 +42,45 @@ export default function Home() {
     loadData();
   }, [supabase, user]);
 
+  // Sync pins created/upvoted by other users in real time. Own inserts/votes
+  // are already applied optimistically above, so these handlers dedupe by id
+  // rather than assuming every event is new.
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel("pins-changes")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "pins" },
+        (payload) => {
+          const newPin = payload.new as Pin;
+          setPins((prev) => (prev.some((p) => p.id === newPin.id) ? prev : [newPin, ...prev]));
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "pins" },
+        (payload) => {
+          const updatedPin = payload.new as Pin;
+          setPins((prev) => prev.map((p) => (p.id === updatedPin.id ? updatedPin : p)));
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "pins" },
+        (payload) => {
+          const deletedId = (payload.old as Pin).id;
+          setPins((prev) => prev.filter((p) => p.id !== deletedId));
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, user]);
+
   const handleMapClick = useCallback((lat: number, lng: number) => {
     setDraft({ lat, lng });
   }, []);

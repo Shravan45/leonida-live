@@ -45,19 +45,17 @@ code.
 These three unchecked items are the immediate blockers before any new
 feature work — the app can't actually talk to Supabase yet.
 
-## Phase 1 — Realtime pin sync (not started)
+## Phase 1 — Realtime pin sync ✅ done
 
-Right now pins/votes only load once on mount via `SupabaseProvider`'s user
-effect in `page.tsx`. Other users' changes don't appear until a manual
-refresh.
-
-- [ ] Subscribe to `postgres_changes` on `public.pins` (INSERT) in
-      `page.tsx` (or a dedicated hook) and merge new rows into state
-- [ ] Subscribe to `public.pins` (UPDATE) so `upvote_count` changes from
-      other users' votes show up live
-- [ ] Clean up channel subscriptions on unmount
-- [ ] Handle the case where the local optimistic update and an incoming
-      realtime event describe the same change (avoid double-counting)
+- [x] Subscribe to `postgres_changes` on `public.pins` (INSERT/UPDATE/DELETE)
+      in `page.tsx`, merging into state and deduping by id against
+      optimistic local updates
+- [x] Clean up channel subscription on unmount (`supabase.removeChannel`)
+- [x] Migration `0002_realtime.sql` registers `public.pins` with the
+      `supabase_realtime` publication (required — without it the
+      subscription connects but receives nothing)
+- [x] Verified live: pin dropped in an incognito tab appeared in a
+      logged-in tab without a refresh
 
 ## Phase 2 — Presence (not started)
 
@@ -116,4 +114,8 @@ refresh.
   Turbopack when statically imported from `node_modules` (`.src`
   came back `undefined`) — fixed by copying the marker PNGs into
   `public/leaflet/` and referencing them as plain static URLs instead.
-  Also added Miami-only map bounds. Next: Phase 1 (realtime sync).
+  Also added Miami-only map bounds. Then shipped Phase 1 (realtime pin
+  sync) — required manually running the `0002_realtime.sql` publication
+  migration in the SQL Editor since it wasn't applied automatically.
+  Verified with two concurrent browser sessions. Next: Phase 2
+  (presence).
