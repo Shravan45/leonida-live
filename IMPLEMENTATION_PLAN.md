@@ -104,13 +104,22 @@ feature work — the app can't actually talk to Supabase yet.
       expected concurrent users
 - [ ] Bundle size check on the Leaflet client chunk
 
-## Phase 5 — Deploy
+## Phase 5 — Deploy ✅ done
 
-- [ ] Link project to Vercel (`vercel link`)
-- [ ] Set `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` in
-      Vercel project env vars (Preview + Production)
-- [ ] First deploy, smoke test against the real Supabase project
-- [ ] Custom domain (if applicable)
+- [x] Linked project to Vercel (`vercel link --yes`) — project
+      `brewed-entropy/leonida-live`, GitHub repo auto-connected for
+      future git-push deploys
+- [x] Set `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` in
+      Vercel for Production, Preview, and Development
+- [x] First deploy — build succeeded, no runtime errors in logs,
+      HTTP 200. **Live at https://leonida-live.vercel.app**
+- [ ] Custom domain (not requested yet)
+
+Note: the very first `vercel` deploy auto-aliased straight to the
+production domain (no separate preview step) since there was no prior
+production deployment yet to distinguish it from. Later deploys with
+plain `vercel` should behave as normal preview deploys; use
+`vercel --prod` to intentionally promote to production.
 
 ---
 
@@ -152,6 +161,11 @@ feature work — the app can't actually talk to Supabase yet.
   category filter that reads clearly as a filter control (labeled
   "Filter pins", glow-on-active, dim-with-"— off" when inactive) plus a
   chip-based category picker in the pin-drop form (replacing the native
-  `<select>`). Not yet visually verified in browser — user to review.
-  Next: Phase 5 (deploy to Vercel), then revisit Phase 4 (caching/perf)
-  once there's a real production URL to test against.
+  `<select>`). User confirmed it looks good in browser. Then shipped
+  Phase 5 (deploy): updated the Vercel CLI (55.0.0 → 56.3.1, installed
+  via nvm's npm since Homebrew's install was blocked by broken Xcode
+  CLT), linked the project, set Supabase env vars for all three
+  environments, and deployed. Build succeeded, no runtime errors,
+  HTTP 200. **Live at https://leonida-live.vercel.app.** Next: user to
+  smoke-test the production URL, then revisit Phase 4 (caching/perf)
+  now that there's a real production URL to test against.
