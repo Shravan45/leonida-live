@@ -5,12 +5,16 @@ import { useCallback, useEffect, useState } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import NewPinForm from "@/components/NewPinForm";
 import CategoryFilter from "@/components/CategoryFilter";
+import UsernameBadge from "@/components/UsernameBadge";
+import OnboardingModal from "@/components/OnboardingModal";
 import type { Pin, PinCategory } from "@/lib/types";
 
 // Keep in sync with the 30s window enforced server-side in
 // supabase/migrations/0003_pin_rate_limit.sql — this is just a faster local
 // pre-check, not the actual enforcement.
 const PIN_COOLDOWN_MS = 30_000;
+
+const ONBOARDING_STORAGE_KEY = "leonida-live-onboarded";
 
 const Map = dynamic(() => import("@/components/Map"), {
   ssr: false,
@@ -37,6 +41,8 @@ export default function Home() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [retryToken, setRetryToken] = useState(0);
   const [lastDropAt, setLastDropAt] = useState<number | null>(null);
+  const [myName, setMyName] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -73,6 +79,63 @@ export default function Home() {
       cancelled = true;
     };
   }, [supabase, user, retryToken]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+    async function loadProfile() {
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", user!.id)
+        .maybeSingle();
+      if (cancelled) return;
+
+      const name = data?.display_name ?? null;
+      setMyName(name);
+
+      // First visit on this browser: prompt to pick a name (pre-filled
+      // with the auto-generated one).
+      if (name && !localStorage.getItem(ONBOARDING_STORAGE_KEY)) {
+        setShowOnboarding(true);
+      }
+    }
+    loadProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, user]);
+
+  const handleSaveUsername = useCallback(async (name: string): Promise<string | null> => {
+    const res = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ display_name: name }),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      return (body?.error as string | undefined) ?? "Couldn't update username.";
+    }
+
+    const { profile } = await res.json();
+    setMyName(profile.display_name);
+    return null;
+  }, []);
+
+  const handleOnboardingConfirm = useCallback(
+    async (name: string): Promise<string | null> => {
+      const err = await handleSaveUsername(name);
+      if (!err) {
+        localStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
+        setShowOnboarding(false);
+      }
+      return err;
+    },
+    [handleSaveUsername],
+  );
 
   // Transient toast for background action failures (vote sync, etc).
   useEffect(() => {
@@ -271,6 +334,10 @@ export default function Home() {
 
   return (
     <div className="relative h-screen w-full">
+      {showOnboarding && myName && (
+        <OnboardingModal suggestedName={myName} onConfirm={handleOnboardingConfirm} />
+      )}
+
       <div className="absolute left-3 top-3 z-[1000] rounded-full border border-white/10 bg-[#0f0a1a]/85 px-3 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur sm:px-4">
         <span className="font-display bg-gradient-to-r from-[var(--neon-pink)] to-[var(--neon-cyan)] bg-clip-text text-base tracking-wider text-transparent sm:text-xl">
           LEONIDA LIVE
@@ -316,6 +383,7 @@ export default function Home() {
         onUpvote={handleUpvote}
       />
       {!draft && <CategoryFilter active={activeCategories} onToggle={handleToggleCategory} />}
+      {!draft && <UsernameBadge name={myName} onSave={handleSaveUsername} />}
       {draft && (
         <NewPinForm
           lat={draft.lat}

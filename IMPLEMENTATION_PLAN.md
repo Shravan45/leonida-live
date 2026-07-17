@@ -237,6 +237,36 @@ in with the user before starting:
       commit — added a `!.env.local.example` exception so it's actually
       version-controlled.
 
+### 6d. Custom usernames (user-requested follow-up)
+
+- [x] Extracted the Anthropic moderation call out of `/api/pins/route.ts`
+      into `src/lib/moderation.ts` (`moderateText`) so it's shared rather
+      than duplicated once a second thing needed moderating (usernames).
+- [x] `/api/profile` (PATCH): renames a user's `display_name`. Validates
+      length (2-24) and charset server-side, runs the same abuse-check as
+      pins, and returns a clean 409 on a uniqueness conflict.
+- [x] Migration `0006_username_edit.sql`: RLS policy letting a user update
+      their own profile row, plus a length check constraint as a
+      defense-in-depth backstop.
+- [x] Migration `0007_unique_usernames.sql`: unique constraint on
+      `display_name` (deduping any pre-existing collisions first — none
+      existed yet, but the constraint would've failed to create
+      otherwise). Rewrote `handle_new_user()` to retry with a fresh random
+      name on collision (up to 20x, then falls back to a guaranteed-unique
+      suffix) — without this, a random-generator collision would roll
+      back the anonymous sign-in transaction entirely.
+- [x] `UsernameBadge.tsx`: a "You: [name] ✏️" button, bottom-right,
+      click-to-edit inline. Hidden while the pin-drop form is open (same
+      pattern as the category filter).
+- [x] `OnboardingModal.tsx`: shown once per browser on first visit
+      (tracked via `localStorage`, not a DB column — consistent with how
+      identity here is already browser-scoped, not account-scoped),
+      pre-filled with the auto-generated name so accepting the default is
+      a single click.
+- [x] Verified in browser: uniqueness conflict shows "already taken",
+      moderation blocks an abusive username, onboarding modal appears
+      correctly after clearing the localStorage flag.
+
 Note: the very first `vercel` deploy auto-aliased straight to the
 production domain (no separate preview step) since there was no prior
 production deployment yet to distinguish it from. Later deploys with
