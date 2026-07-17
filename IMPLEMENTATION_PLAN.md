@@ -36,9 +36,11 @@ code.
 - [x] Map renders, centered on Miami
 - [x] Click-to-drop pin flow with title/description/category form
 - [x] Upvote/unvote with optimistic UI + rollback on error
-- [ ] **`.env.local` populated with the real Supabase project URL + anon key**
-- [ ] **`0001_init.sql` applied to the remote Supabase DB**
-- [ ] Pushed to GitHub
+- [x] Map bounded to the Miami-Dade urban core (can't pan/zoom to rest of FL)
+- [x] Verified end-to-end in browser: anonymous sign-in, pin drop, upvote
+- [x] `.env.local` populated with the real Supabase project URL + anon key
+- [x] `0001_init.sql` applied to the remote Supabase DB
+- [x] Pushed to GitHub (https://github.com/Shravan45/leonida-live)
 
 These three unchecked items are the immediate blockers before any new
 feature work — the app can't actually talk to Supabase yet.
@@ -100,5 +102,18 @@ refresh.
 
 - **2026-07-16**: Recovered a lost session's progress (Phase 0 code was
   already written). Confirmed a Supabase project exists with anonymous
-  sign-in enabled. Wrote this plan. Next: wire `.env.local`, apply the
-  migration, push to GitHub, then start Phase 1 (realtime sync).
+  sign-in enabled. Wrote this plan, pushed the repo to
+  https://github.com/Shravan45/leonida-live, applied the DB migration,
+  and wired `.env.local` to the real project. Local dev requires Node
+  ≥20.9.0 — this machine's system Node was 19.8.1, fixed via `nvm`
+  (`nvm use default` before `npm run dev`; Xcode Command Line Tools are
+  broken on this machine, which blocks Homebrew node/supabase-cli
+  upgrades — fix later with `xcode-select --install` if the CLI is
+  needed). Verified pin drop/upvote end-to-end in browser after two
+  fixes: (1) anonymous sign-ins were toggled off in the Supabase
+  project despite earlier setup — re-enabled in Authentication →
+  Sign In/Providers; (2) Leaflet's default marker icons broke under
+  Turbopack when statically imported from `node_modules` (`.src`
+  came back `undefined`) — fixed by copying the marker PNGs into
+  `public/leaflet/` and referencing them as plain static URLs instead.
+  Also added Miami-only map bounds. Next: Phase 1 (realtime sync).

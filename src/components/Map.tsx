@@ -2,18 +2,16 @@
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
 import type { Pin } from "@/lib/types";
 
-// react-leaflet's default marker icon paths break under bundlers; point them
-// at the actual bundled asset URLs instead.
+// react-leaflet's default marker icons resolve to broken paths under
+// bundlers; serve the marker images from /public instead (copied from
+// leaflet/dist/images) so they're plain static URLs.
 const defaultIcon = L.icon({
-  iconRetinaUrl: markerIcon2x.src,
-  iconUrl: markerIcon.src,
-  shadowUrl: markerShadow.src,
+  iconRetinaUrl: "/leaflet/marker-icon-2x.png",
+  iconUrl: "/leaflet/marker-icon.png",
+  shadowUrl: "/leaflet/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -21,6 +19,14 @@ const defaultIcon = L.icon({
 });
 
 export const MIAMI_CENTER: [number, number] = [25.7617, -80.1918];
+
+// Roughly the Miami-Dade urban core (Homestead to North Miami, Everglades to
+// the barrier islands) — keeps the map focused on the city instead of
+// panning/zooming out to the rest of Florida.
+const MIAMI_BOUNDS: L.LatLngBoundsExpression = [
+  [25.55, -80.55],
+  [25.98, -80.05],
+];
 
 const CATEGORY_LABELS: Record<Pin["category"], string> = {
   location: "Location",
@@ -47,7 +53,14 @@ interface MapProps {
 
 export default function Map({ pins, votedPinIds, onMapClick, onUpvote }: MapProps) {
   return (
-    <MapContainer center={MIAMI_CENTER} zoom={12} className="h-full w-full">
+    <MapContainer
+      center={MIAMI_CENTER}
+      zoom={12}
+      minZoom={11}
+      maxBounds={MIAMI_BOUNDS}
+      maxBoundsViscosity={1.0}
+      className="h-full w-full"
+    >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
