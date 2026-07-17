@@ -383,13 +383,13 @@ export default function Home() {
 
         <div className="mt-1 flex items-center gap-1.5">
           <span className="text-[10px] leading-none text-white/35 sm:text-xs">
-            by Shravan Ramdurg
+            by BrewedEntropy
           </span>
           <a
             href="https://www.linkedin.com/in/shravanramdurg/"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Shravan Ramdurg on LinkedIn"
+            aria-label="BrewedEntropy on LinkedIn"
             className="text-white/35 transition-colors hover:text-[var(--neon-cyan)]"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -400,7 +400,7 @@ export default function Home() {
             href="https://github.com/Shravan45"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Shravan Ramdurg on GitHub"
+            aria-label="BrewedEntropy on GitHub"
             className="text-white/35 transition-colors hover:text-[var(--neon-cyan)]"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

@@ -6,7 +6,7 @@ A real-time GTA6 community map — drop and upvote in-game locations, easter egg
 
 Built with Next.js (App Router), Supabase (Postgres, Auth, Realtime), and Leaflet. See [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md) for the full build log and architecture decisions.
 
-By [Shravan Ramdurg](https://github.com/Shravan45).
+By [BrewedEntropy](https://github.com/Shravan45).
 
 ## Getting Started
 

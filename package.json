@@ -2,7 +2,7 @@
   "name": "leonida-live",
   "version": "0.1.0",
   "private": true,
-  "author": "Shravan Ramdurg",
+  "author": "BrewedEntropy",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
