@@ -338,9 +338,12 @@ export default function Home() {
         <OnboardingModal suggestedName={myName} onConfirm={handleOnboardingConfirm} />
       )}
 
-      <div className="absolute left-3 top-3 z-[1000] rounded-full border border-white/10 bg-[#0f0a1a]/85 px-3 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur sm:px-4">
-        <span className="font-display bg-gradient-to-r from-[var(--neon-pink)] to-[var(--neon-cyan)] bg-clip-text text-base tracking-wider text-transparent sm:text-xl">
+      <div className="absolute left-3 top-3 z-[1000] flex flex-col gap-0.5 rounded-2xl border border-white/10 bg-[#0f0a1a]/85 px-3 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur sm:px-4">
+        <span className="font-display bg-gradient-to-r from-[var(--neon-pink)] to-[var(--neon-cyan)] bg-clip-text text-base leading-none tracking-wider text-transparent sm:text-xl">
           LEONIDA LIVE
+        </span>
+        <span className="text-[10px] leading-none text-white/35 sm:text-xs">
+          by Shravan Ramdurg
         </span>
       </div>
 
