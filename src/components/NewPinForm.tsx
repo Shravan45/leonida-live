@@ -2,23 +2,25 @@
 
 import { useState } from "react";
 import type { PinCategory } from "@/lib/types";
+import { CATEGORY_OPTIONS } from "@/lib/categories";
 
 interface NewPinFormProps {
   lat: number;
   lng: number;
   submitting: boolean;
+  error?: string | null;
   onCancel: () => void;
   onSubmit: (fields: { title: string; description: string; category: PinCategory }) => void;
 }
 
-const CATEGORY_OPTIONS: { value: PinCategory; label: string }[] = [
-  { value: "location", label: "Location" },
-  { value: "easter_egg", label: "Easter Egg" },
-  { value: "leak", label: "Leak" },
-  { value: "other", label: "Other" },
-];
-
-export default function NewPinForm({ lat, lng, submitting, onCancel, onSubmit }: NewPinFormProps) {
+export default function NewPinForm({
+  lat,
+  lng,
+  submitting,
+  error,
+  onCancel,
+  onSubmit,
+}: NewPinFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<PinCategory>("location");
@@ -41,19 +43,21 @@ export default function NewPinForm({ lat, lng, submitting, onCancel, onSubmit }:
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Title"
-          className="rounded border border-neutral-300 px-2 py-1 text-sm dark:border-neutral-700 dark:bg-neutral-800"
+          // text-base (not text-sm) avoids iOS Safari auto-zooming the page
+          // on focus, which it does for inputs under 16px font size.
+          className="rounded border border-neutral-300 px-2 py-2 text-base dark:border-neutral-700 dark:bg-neutral-800"
         />
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Description (optional)"
           rows={2}
-          className="rounded border border-neutral-300 px-2 py-1 text-sm dark:border-neutral-700 dark:bg-neutral-800"
+          className="rounded border border-neutral-300 px-2 py-2 text-base dark:border-neutral-700 dark:bg-neutral-800"
         />
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value as PinCategory)}
-          className="rounded border border-neutral-300 px-2 py-1 text-sm dark:border-neutral-700 dark:bg-neutral-800"
+          className="rounded border border-neutral-300 px-2 py-2 text-base dark:border-neutral-700 dark:bg-neutral-800"
         >
           {CATEGORY_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -61,18 +65,19 @@ export default function NewPinForm({ lat, lng, submitting, onCancel, onSubmit }:
             </option>
           ))}
         </select>
+        {error && <span className="text-xs text-red-600 dark:text-red-400">{error}</span>}
         <div className="flex justify-end gap-2 pt-1">
           <button
             type="button"
             onClick={onCancel}
-            className="rounded px-3 py-1 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            className="min-h-[44px] rounded px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={submitting || !title.trim()}
-            className="rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white disabled:opacity-50"
+            className="min-h-[44px] rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
             {submitting ? "Dropping…" : "Drop pin"}
           </button>

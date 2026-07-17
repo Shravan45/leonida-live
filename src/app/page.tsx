@@ -4,7 +4,13 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { useSupabase } from "@/components/SupabaseProvider";
 import NewPinForm from "@/components/NewPinForm";
+import CategoryFilter from "@/components/CategoryFilter";
 import type { Pin, PinCategory } from "@/lib/types";
+
+// Keep in sync with the 30s window enforced server-side in
+// supabase/migrations/0003_pin_rate_limit.sql — this is just a faster local
+// pre-check, not the actual enforcement.
+const PIN_COOLDOWN_MS = 30_000;
 
 const Map = dynamic(() => import("@/components/Map"), {
   ssr: false,
@@ -21,27 +27,59 @@ export default function Home() {
   const [votedPinIds, setVotedPinIds] = useState<Set<string>>(new Set());
   const [draft, setDraft] = useState<{ lat: number; lng: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [onlineCount, setOnlineCount] = useState(1);
+  const [activeCategories, setActiveCategories] = useState<Set<PinCategory>>(
+    new Set(["location", "easter_egg", "leak", "other"]),
+  );
+  const [pinsLoading, setPinsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [retryToken, setRetryToken] = useState(0);
+  const [lastDropAt, setLastDropAt] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) return;
 
+    let cancelled = false;
+
     async function loadData() {
+      setPinsLoading(true);
+      setLoadError(null);
+
       const [{ data: pinRows, error: pinsError }, { data: voteRows, error: votesError }] =
         await Promise.all([
           supabase.from("pins").select("*").order("created_at", { ascending: false }),
           supabase.from("pin_votes").select("pin_id").eq("user_id", user!.id),
         ]);
 
-      if (pinsError) console.error("Failed to load pins:", pinsError.message);
-      if (votesError) console.error("Failed to load votes:", votesError.message);
+      if (cancelled) return;
+
+      if (pinsError || votesError) {
+        console.error("Failed to load pins:", pinsError?.message ?? votesError?.message);
+        setLoadError("Couldn't load the map data. Check your connection and try again.");
+        setPinsLoading(false);
+        return;
+      }
 
       setPins(pinRows ?? []);
       setVotedPinIds(new Set((voteRows ?? []).map((v) => v.pin_id)));
+      setPinsLoading(false);
     }
 
     loadData();
-  }, [supabase, user]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, user, retryToken]);
+
+  // Transient toast for background action failures (vote sync, etc).
+  useEffect(() => {
+    if (!actionError) return;
+    const timer = setTimeout(() => setActionError(null), 4000);
+    return () => clearTimeout(timer);
+  }, [actionError]);
 
   // Sync pins created/upvoted by other users in real time. Own inserts/votes
   // are already applied optimistically above, so these handlers dedupe by id
@@ -106,14 +144,37 @@ export default function Home() {
     };
   }, [supabase, user]);
 
-  const handleMapClick = useCallback((lat: number, lng: number) => {
-    setDraft({ lat, lng });
+  const handleToggleCategory = useCallback((category: PinCategory) => {
+    setActiveCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
   }, []);
+
+  const handleMapClick = useCallback(
+    (lat: number, lng: number) => {
+      if (lastDropAt) {
+        const remainingMs = PIN_COOLDOWN_MS - (Date.now() - lastDropAt);
+        if (remainingMs > 0) {
+          setActionError(`Wait ${Math.ceil(remainingMs / 1000)}s before dropping another pin.`);
+          return;
+        }
+      }
+      setDraft({ lat, lng });
+    },
+    [lastDropAt],
+  );
 
   const handleSubmitPin = useCallback(
     async (fields: { title: string; description: string; category: PinCategory }) => {
       if (!draft || !user) return;
       setSubmitting(true);
+      setSubmitError(null);
 
       const { data, error } = await supabase
         .from("pins")
@@ -132,9 +193,15 @@ export default function Home() {
 
       if (error) {
         console.error("Failed to create pin:", error.message);
+        setSubmitError(
+          error.message.includes("rate_limited")
+            ? "You're dropping pins too fast — wait a bit before the next one."
+            : "Couldn't drop the pin. Try again.",
+        );
         return;
       }
 
+      setLastDropAt(Date.now());
       setPins((prev) => [data as Pin, ...prev]);
       setDraft(null);
     },
@@ -168,6 +235,7 @@ export default function Home() {
 
       if (error) {
         console.error("Failed to update vote:", error.message);
+        setActionError("Couldn't update your vote. Try again.");
         setVotedPinIds((prev) => {
           const next = new Set(prev);
           if (alreadyVoted) {
@@ -201,13 +269,51 @@ export default function Home() {
         <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
         {onlineCount} live
       </div>
-      <Map pins={pins} votedPinIds={votedPinIds} onMapClick={handleMapClick} onUpvote={handleUpvote} />
+
+      {/* Sits below the "N live" badge (not beside it) so long banner text
+          never collides with it, even on narrow screens. */}
+      {pinsLoading && !loadError && (
+        <div className="absolute left-1/2 top-14 z-[1000] max-w-[92vw] -translate-x-1/2 rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-xs font-medium text-neutral-600 shadow-sm backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/90 dark:text-neutral-300">
+          Loading pins…
+        </div>
+      )}
+
+      {loadError && (
+        <div className="absolute left-1/2 top-14 z-[1000] flex max-w-[92vw] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 shadow-sm dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+          <span>{loadError}</span>
+          <button
+            type="button"
+            onClick={() => setRetryToken((t) => t + 1)}
+            className="shrink-0 rounded-full bg-red-600 px-2 py-0.5 text-white"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {actionError && !loadError && (
+        <div className="absolute left-1/2 top-14 z-[1000] max-w-[92vw] -translate-x-1/2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 shadow-sm dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+          {actionError}
+        </div>
+      )}
+
+      <Map
+        pins={pins.filter((p) => activeCategories.has(p.category))}
+        votedPinIds={votedPinIds}
+        onMapClick={handleMapClick}
+        onUpvote={handleUpvote}
+      />
+      {!draft && <CategoryFilter active={activeCategories} onToggle={handleToggleCategory} />}
       {draft && (
         <NewPinForm
           lat={draft.lat}
           lng={draft.lng}
           submitting={submitting}
-          onCancel={() => setDraft(null)}
+          error={submitError}
+          onCancel={() => {
+            setDraft(null);
+            setSubmitError(null);
+          }}
           onSubmit={handleSubmitPin}
         />
       )}

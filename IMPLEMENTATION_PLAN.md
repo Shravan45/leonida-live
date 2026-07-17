@@ -68,16 +68,27 @@ feature work — the app can't actually talk to Supabase yet.
 - [ ] (Stretch, deferred) show rough cursor positions or last-clicked
       location of other online users on the map
 
-## Phase 3 — Map & UX polish (not started)
+## Phase 3 — Map & UX polish ✅ done
 
-- [ ] Category filter/legend (toggle location / easter egg / leak / other)
-- [ ] Marker clustering for dense areas (`react-leaflet-cluster` or similar)
-- [ ] Distinct marker icons/colors per category
-- [ ] Mobile layout pass (drop-pin form is currently a bottom sheet — verify
-      touch targets, keyboard behavior on iOS Safari)
-- [ ] Empty/loading/error states beyond the current bare spinner text
-- [ ] Basic anti-spam: cooldown between pin drops per user, max pins/user,
-      or a report/flag action
+- [x] Category filter/legend — toggle chips in `CategoryFilter.tsx`,
+      bottom-left, hidden while the pin-drop form is open
+- [x] Distinct colored dot markers per category (`L.divIcon`, no image
+      assets — sidesteps the earlier Turbopack marker-icon bug entirely).
+      Colors/labels centralized in `src/lib/categories.ts`
+- [x] Marker clustering via `react-leaflet-cluster` for dense areas
+- [x] Loading/error states: "Loading pins…" indicator, a retry banner on
+      fetch failure, inline error in the pin-drop form, and a transient
+      toast for vote-sync failures
+- [x] Anti-spam: 30s pin-drop cooldown, enforced server-side via a
+      `before insert` trigger (`0003_pin_rate_limit.sql` — can't be
+      bypassed) plus a client-side pre-check for instant feedback without
+      a round trip
+- [x] Mobile layout pass — fixed banner/badge overlap risk on narrow
+      screens, constrained the category filter's width so it wraps
+      instead of overflowing off-screen, bumped touch targets toward
+      ~44px, bumped form fields to `text-base` (prevents iOS Safari's
+      auto-zoom-on-focus for <16px inputs). **Not yet visually verified
+      on a real device/viewport — worth a manual check.**
 
 ## Phase 4 — Performance & launch-hype readiness (not started)
 
@@ -123,6 +134,10 @@ feature work — the app can't actually talk to Supabase yet.
   Verified with two concurrent browser sessions. Then shipped Phase 2
   (presence) — a live-user-count badge via Supabase Realtime Presence,
   keyed by anon user id. Verified across 3 windows (correctly showed 2,
-  since Chrome incognito windows share one session). Next: Phase 3
-  (map/UX polish) or Phase 5 (deploy to Vercel) — worth deploying soon
-  to get a real production URL before piling on more features.
+  since Chrome incognito windows share one session). Then shipped
+  Phase 3 (map/UX polish): category filter + colored markers,
+  clustering, loading/error states, a server-enforced 30s pin-drop
+  cooldown (`0003_pin_rate_limit.sql`), and a mobile layout pass (not
+  yet visually verified on a real device). Next: Phase 5 (deploy to
+  Vercel), then revisit Phase 4 (caching/perf) once there's a real
+  production URL to test against.
