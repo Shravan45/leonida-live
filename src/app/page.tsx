@@ -1,65 +1,148 @@
-import Image from "next/image";
+"use client";
+
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useState } from "react";
+import { useSupabase } from "@/components/SupabaseProvider";
+import NewPinForm from "@/components/NewPinForm";
+import type { Pin, PinCategory } from "@/lib/types";
+
+const Map = dynamic(() => import("@/components/Map"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center text-sm text-neutral-500">
+      Loading map…
+    </div>
+  ),
+});
 
 export default function Home() {
+  const { supabase, user, loading } = useSupabase();
+  const [pins, setPins] = useState<Pin[]>([]);
+  const [votedPinIds, setVotedPinIds] = useState<Set<string>>(new Set());
+  const [draft, setDraft] = useState<{ lat: number; lng: number } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+
+    async function loadData() {
+      const [{ data: pinRows, error: pinsError }, { data: voteRows, error: votesError }] =
+        await Promise.all([
+          supabase.from("pins").select("*").order("created_at", { ascending: false }),
+          supabase.from("pin_votes").select("pin_id").eq("user_id", user!.id),
+        ]);
+
+      if (pinsError) console.error("Failed to load pins:", pinsError.message);
+      if (votesError) console.error("Failed to load votes:", votesError.message);
+
+      setPins(pinRows ?? []);
+      setVotedPinIds(new Set((voteRows ?? []).map((v) => v.pin_id)));
+    }
+
+    loadData();
+  }, [supabase, user]);
+
+  const handleMapClick = useCallback((lat: number, lng: number) => {
+    setDraft({ lat, lng });
+  }, []);
+
+  const handleSubmitPin = useCallback(
+    async (fields: { title: string; description: string; category: PinCategory }) => {
+      if (!draft || !user) return;
+      setSubmitting(true);
+
+      const { data, error } = await supabase
+        .from("pins")
+        .insert({
+          lat: draft.lat,
+          lng: draft.lng,
+          title: fields.title,
+          description: fields.description || null,
+          category: fields.category,
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      setSubmitting(false);
+
+      if (error) {
+        console.error("Failed to create pin:", error.message);
+        return;
+      }
+
+      setPins((prev) => [data as Pin, ...prev]);
+      setDraft(null);
+    },
+    [draft, supabase, user],
+  );
+
+  const handleUpvote = useCallback(
+    async (pinId: string) => {
+      if (!user) return;
+      const alreadyVoted = votedPinIds.has(pinId);
+
+      // Optimistic update, reverted on error.
+      setVotedPinIds((prev) => {
+        const next = new Set(prev);
+        if (alreadyVoted) {
+          next.delete(pinId);
+        } else {
+          next.add(pinId);
+        }
+        return next;
+      });
+      setPins((prev) =>
+        prev.map((p) =>
+          p.id === pinId ? { ...p, upvote_count: p.upvote_count + (alreadyVoted ? -1 : 1) } : p,
+        ),
+      );
+
+      const { error } = alreadyVoted
+        ? await supabase.from("pin_votes").delete().eq("pin_id", pinId).eq("user_id", user.id)
+        : await supabase.from("pin_votes").insert({ pin_id: pinId, user_id: user.id });
+
+      if (error) {
+        console.error("Failed to update vote:", error.message);
+        setVotedPinIds((prev) => {
+          const next = new Set(prev);
+          if (alreadyVoted) {
+            next.add(pinId);
+          } else {
+            next.delete(pinId);
+          }
+          return next;
+        });
+        setPins((prev) =>
+          prev.map((p) =>
+            p.id === pinId ? { ...p, upvote_count: p.upvote_count + (alreadyVoted ? 1 : -1) } : p,
+          ),
+        );
+      }
+    },
+    [supabase, user, votedPinIds],
+  );
+
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center text-sm text-neutral-500">
+        Signing you in…
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="relative h-screen w-full">
+      <Map pins={pins} votedPinIds={votedPinIds} onMapClick={handleMapClick} onUpvote={handleUpvote} />
+      {draft && (
+        <NewPinForm
+          lat={draft.lat}
+          lng={draft.lng}
+          submitting={submitting}
+          onCancel={() => setDraft(null)}
+          onSubmit={handleSubmitPin}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
     </div>
   );
 }
