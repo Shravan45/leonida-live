@@ -124,7 +124,24 @@ feature work — the app can't actually talk to Supabase yet.
       than the Supabase client chunk (~65KB gzip). Total client JS across
       all chunks is ~304KB gzipped. Nothing bloated, no action needed.
 
-## Phase 6 — Identity, AI moderation, admin (not started)
+## Phase 5 — Deploy ✅ done
+
+- [x] Linked project to Vercel (`vercel link --yes`) — project
+      `brewed-entropy/leonida-live`, GitHub repo auto-connected for
+      future git-push deploys
+- [x] Set `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` in
+      Vercel for Production, Preview, and Development
+- [x] First deploy — build succeeded, no runtime errors in logs,
+      HTTP 200. **Live at https://leonida-live.vercel.app**
+- [ ] Custom domain (not requested yet)
+
+Note: the very first `vercel` deploy auto-aliased straight to the
+production domain (no separate preview step) since there was no prior
+production deployment yet to distinguish it from. Later deploys with
+plain `vercel` should behave as normal preview deploys; use
+`vercel --prod` to intentionally promote to production.
+
+## Phase 6 — Identity, AI moderation, admin (code done, browser-verification pending)
 
 User-requested additions beyond the original MVP scope. Decisions locked
 in with the user before starting:
@@ -182,43 +199,47 @@ in with the user before starting:
 - [x] Updated `handleSubmitPin` in `page.tsx` to POST to `/api/pins`
       instead of calling `supabase.insert()` directly; the 422 moderation
       message surfaces through the existing `submitError` UI.
-- [ ] Not yet tested end-to-end through the actual UI (only tested the
-      Anthropic API calls directly and confirmed the route typechecks/
-      compiles) — do this once 0004 is applied.
+- [ ] Not yet verified through the actual browser UI (pin drop showing
+      a username, abusive content actually getting blocked) — only the
+      Anthropic API calls themselves were live-tested directly.
 
 ### 6c. Admin moderation + email-on-new-pin
 
-- [ ] Migration `0005_admin.sql`: `admins` table (`user_id` → `auth.users`,
+- [x] Migration `0005_admin.sql`: `admins` table (`user_id` → `auth.users`,
       self-select RLS policy so a client can check "am I admin"), plus a
       `delete` RLS policy on `pins` for admins.
-- [ ] User creates their own admin account in the Supabase dashboard
-      (Authentication → Users → Add user, email+password), then runs a
-      one-line `insert into admins (user_id) values ('<uuid>');` — guided
-      step, not automatable from here.
-- [ ] `/admin` page: email/password sign-in (`supabase.auth.signInWithPassword`,
-      coexists fine with the anonymous-by-default flow — signing in
+- [x] User created their admin account in the Supabase dashboard
+      (Authentication → Users → Add user, email+password) and ran
+      `insert into admins (user_id) values ('<uuid>');`.
+- [x] `/admin` page (`src/app/admin/page.tsx`): email/password sign-in
+      (coexists fine with the anonymous-by-default flow — signing in
       replaces the anonymous session), then a list of all pins with a
-      delete button for confirmed admins only.
-- [ ] Email notification: Postgres `after insert` trigger on `pins` using
-      the `pg_net` extension (`net.http_post`) to call a new
-      `/api/webhooks/new-pin` Route Handler, verified via a shared-secret
-      header, which sends the email via Resend. Chosen over client-side
-      email sending or a dashboard-configured webhook so the whole thing
-      ships as a migration + one route, no manual dashboard webhook setup.
-- [ ] User creates a Resend account + API key, and sets
-      `RESEND_API_KEY`, `ADMIN_EMAIL`, `WEBHOOK_SECRET` in `.env.local`
-      and Vercel env vars (guided step).
-
-## Phase 5 — Deploy ✅ done
-
-- [x] Linked project to Vercel (`vercel link --yes`) — project
-      `brewed-entropy/leonida-live`, GitHub repo auto-connected for
-      future git-push deploys
-- [x] Set `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` in
-      Vercel for Production, Preview, and Development
-- [x] First deploy — build succeeded, no runtime errors in logs,
-      HTTP 200. **Live at https://leonida-live.vercel.app**
-- [ ] Custom domain (not requested yet)
+      delete button for confirmed admins only. **Not yet verified through
+      the browser** (sign-in, pins list, delete) — code deployed, untested.
+- [x] Email notification: `after insert` trigger on `pins` using `pg_net`
+      (`net.http_post`) calling `/api/webhooks/new-pin`, verified via a
+      shared-secret header (stored in Supabase Vault, not committed —
+      repo is public), which sends the email via Resend. **Confirmed
+      working**: direct curl tests against both local dev and the
+      deployed production route succeeded and delivered real emails.
+      The actual DB-trigger path (real pin insert → trigger → email)
+      is still unverified pending the user's next test.
+- [x] User created a Resend account + API key; `RESEND_API_KEY`,
+      `ADMIN_EMAIL`, `WEBHOOK_SECRET` set in `.env.local` and all three
+      Vercel environments.
+- [x] **Deployment gotcha worth remembering**: the DB trigger posts to a
+      *hardcoded production URL* (`leonida-live.vercel.app`), not
+      wherever the insert originated. First round of testing silently
+      failed to send email because Phase 6's code (including the webhook
+      route itself) hadn't been deployed yet — the trigger's POST to
+      production 404'd, and `pg_net` calls are fire-and-forget with no
+      visible error. Fixed by pushing to `main` (auto-deploys via the
+      connected GitHub repo). If email-on-new-pin ever silently stops
+      working again, check this first.
+- [x] Also fixed in this pass: `.env.local.example` had been silently
+      swallowed by the `.env*` gitignore rule since the very first
+      commit — added a `!.env.local.example` exception so it's actually
+      version-controlled.
 
 Note: the very first `vercel` deploy auto-aliased straight to the
 production domain (no separate preview step) since there was no prior
