@@ -5,24 +5,27 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import L from "leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMapEvents } from "react-leaflet";
 import type { Pin, PinCategory } from "@/lib/types";
 import { CATEGORY_COLORS, CATEGORY_LABELS } from "@/lib/categories";
 
-// Colored dot markers per category — a plain divIcon needs no image asset,
-// which sidesteps the bundler asset-import issues the old marker-icon.png
-// setup had under Turbopack.
+// Colored, glowing dot markers per category — a plain divIcon needs no image
+// asset, which sidesteps the bundler asset-import issues the old
+// marker-icon.png setup had under Turbopack.
 const categoryIcons: Record<PinCategory, L.DivIcon> = Object.fromEntries(
-  (Object.keys(CATEGORY_COLORS) as PinCategory[]).map((category) => [
-    category,
-    L.divIcon({
-      className: "",
-      html: `<span style="display:block;width:16px;height:16px;border-radius:9999px;background:${CATEGORY_COLORS[category]};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4)"></span>`,
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
-      popupAnchor: [0, -8],
-    }),
-  ]),
+  (Object.keys(CATEGORY_COLORS) as PinCategory[]).map((category) => {
+    const color = CATEGORY_COLORS[category];
+    return [
+      category,
+      L.divIcon({
+        className: "",
+        html: `<span style="display:block;width:22px;height:22px;border-radius:9999px;background:${color};border:2px solid rgba(10,7,20,0.9);box-shadow:0 0 12px 2px ${color}99, 0 0 0 1px rgba(255,255,255,0.15)"></span>`,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+        popupAnchor: [0, -11],
+      }),
+    ];
+  }),
 ) as Record<PinCategory, L.DivIcon>;
 
 export const MIAMI_CENTER: [number, number] = [25.7617, -80.1918];
@@ -59,30 +62,41 @@ export default function Map({ pins, votedPinIds, onMapClick, onUpvote }: MapProp
       minZoom={11}
       maxBounds={MIAMI_BOUNDS}
       maxBoundsViscosity={1.0}
+      zoomControl={false}
       className="h-full w-full"
     >
+      {/* CARTO's dark basemap (free, no API key) instead of stock OSM tiles
+          — the light basemap clashed hard with a neon/dark theme. */}
       <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        subdomains="abcd"
+        maxZoom={20}
       />
+      <ZoomControl position="bottomright" />
       <ClickHandler onMapClick={onMapClick} />
       <MarkerClusterGroup chunkedLoading>
         {pins.map((pin) => (
           <Marker key={pin.id} position={[pin.lat, pin.lng]} icon={categoryIcons[pin.category]}>
             <Popup>
-              <div className="flex flex-col gap-1 text-sm">
-                <span className="text-xs font-semibold uppercase text-neutral-500">
-                  {CATEGORY_LABELS[pin.category]}
+              <div className="flex min-w-[180px] flex-col gap-1.5">
+                <span
+                  className="font-display text-sm tracking-wide"
+                  style={{ color: CATEGORY_COLORS[pin.category] }}
+                >
+                  {CATEGORY_LABELS[pin.category].toUpperCase()}
                 </span>
-                <span className="font-semibold">{pin.title}</span>
-                {pin.description && <span>{pin.description}</span>}
+                <span className="text-base font-semibold text-white">{pin.title}</span>
+                {pin.description && (
+                  <span className="text-sm text-white/70">{pin.description}</span>
+                )}
                 <button
                   type="button"
                   onClick={() => onUpvote(pin.id)}
-                  className={`mt-1 min-h-[36px] self-start rounded px-3 py-1.5 text-xs font-medium ${
+                  className={`mt-1.5 min-h-[40px] self-start rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
                     votedPinIds.has(pin.id)
-                      ? "bg-blue-600 text-white"
-                      : "bg-neutral-200 text-neutral-800"
+                      ? "bg-[var(--neon-pink)] text-white shadow-[0_0_12px_2px_rgba(255,45,120,0.5)]"
+                      : "bg-white/10 text-white hover:bg-white/20"
                   }`}
                 >
                   ▲ {pin.upvote_count}

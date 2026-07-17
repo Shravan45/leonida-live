@@ -22,6 +22,10 @@ code.
 - **Realtime**: Supabase Realtime (`postgres_changes` for pin/vote sync,
   Presence for concurrent-user tracking) — not yet wired, see Phase 2.
 - **Hosting**: Vercel.
+- **Theme**: committed dark "Vice-City-at-night" look, not a light/dark
+  toggle — neon pink/cyan/purple/amber palette (`src/lib/categories.ts`,
+  CSS vars in `globals.css`), Bebas Neue display font for headers/wordmark,
+  CARTO dark basemap tiles, glowing category markers, glass-panel UI.
 
 ---
 
@@ -138,6 +142,16 @@ feature work — the app can't actually talk to Supabase yet.
   Phase 3 (map/UX polish): category filter + colored markers,
   clustering, loading/error states, a server-enforced 30s pin-drop
   cooldown (`0003_pin_rate_limit.sql`), and a mobile layout pass (not
-  yet visually verified on a real device). Next: Phase 5 (deploy to
-  Vercel), then revisit Phase 4 (caching/perf) once there's a real
-  production URL to test against.
+  yet visually verified on a real device). Then did a full visual theme
+  pass at the user's request: committed dark "Vice City at night" look
+  instead of adaptive light/dark — CARTO dark basemap tiles (replacing
+  stock OSM), a neon pink/cyan/purple/amber palette, glowing category
+  markers, Bebas Neue display font + gradient-text wordmark, dark-glass
+  panels throughout, restyled Leaflet chrome (zoom control moved to
+  bottom-right, popups/clusters/attribution re-themed), and a redesigned
+  category filter that reads clearly as a filter control (labeled
+  "Filter pins", glow-on-active, dim-with-"— off" when inactive) plus a
+  chip-based category picker in the pin-drop form (replacing the native
+  `<select>`). Not yet visually verified in browser — user to review.
+  Next: Phase 5 (deploy to Vercel), then revisit Phase 4 (caching/perf)
+  once there's a real production URL to test against.

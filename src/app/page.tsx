@@ -15,7 +15,7 @@ const PIN_COOLDOWN_MS = 30_000;
 const Map = dynamic(() => import("@/components/Map"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full w-full items-center justify-center text-sm text-neutral-500">
+    <div className="flex h-full w-full items-center justify-center text-sm text-white/50">
       Loading map…
     </div>
   ),
@@ -257,7 +257,7 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center text-sm text-neutral-500">
+      <div className="flex h-screen w-full items-center justify-center bg-[var(--background)] text-sm text-white/50">
         Signing you in…
       </div>
     );
@@ -265,26 +265,32 @@ export default function Home() {
 
   return (
     <div className="relative h-screen w-full">
-      <div className="absolute right-3 top-3 z-[1000] flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-xs font-medium text-neutral-700 shadow-sm backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/90 dark:text-neutral-200">
-        <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+      <div className="absolute left-3 top-3 z-[1000] rounded-full border border-white/10 bg-[#0f0a1a]/85 px-3 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur sm:px-4">
+        <span className="font-display bg-gradient-to-r from-[var(--neon-pink)] to-[var(--neon-cyan)] bg-clip-text text-base tracking-wider text-transparent sm:text-xl">
+          LEONIDA LIVE
+        </span>
+      </div>
+
+      <div className="absolute right-3 top-3 z-[1000] flex items-center gap-2 rounded-full border border-white/10 bg-[#0f0a1a]/85 px-3 py-1.5 text-xs font-medium text-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur sm:px-3.5 sm:text-sm">
+        <span className="h-2 w-2 rounded-full bg-[var(--neon-cyan)] shadow-[0_0_6px_1px_var(--neon-cyan)]" />
         {onlineCount} live
       </div>
 
-      {/* Sits below the "N live" badge (not beside it) so long banner text
-          never collides with it, even on narrow screens. */}
+      {/* Sits below the top badges (not beside them) so long banner text
+          never collides with them, even on narrow screens. */}
       {pinsLoading && !loadError && (
-        <div className="absolute left-1/2 top-14 z-[1000] max-w-[92vw] -translate-x-1/2 rounded-full border border-neutral-200 bg-white/90 px-3 py-1 text-xs font-medium text-neutral-600 shadow-sm backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/90 dark:text-neutral-300">
+        <div className="absolute left-1/2 top-16 z-[1000] max-w-[92vw] -translate-x-1/2 rounded-full border border-white/10 bg-[#0f0a1a]/85 px-3.5 py-1.5 text-xs font-medium text-white/60 shadow-sm backdrop-blur">
           Loading pins…
         </div>
       )}
 
       {loadError && (
-        <div className="absolute left-1/2 top-14 z-[1000] flex max-w-[92vw] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 shadow-sm dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+        <div className="absolute left-1/2 top-16 z-[1000] flex max-w-[92vw] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-lg border border-[var(--neon-pink)]/40 bg-[#1a0a14]/95 px-3.5 py-2 text-xs font-medium text-white shadow-sm backdrop-blur">
           <span>{loadError}</span>
           <button
             type="button"
             onClick={() => setRetryToken((t) => t + 1)}
-            className="shrink-0 rounded-full bg-red-600 px-2 py-0.5 text-white"
+            className="shrink-0 rounded-full bg-[var(--neon-pink)] px-3 py-1 font-semibold text-white"
           >
             Retry
           </button>
@@ -292,7 +298,7 @@ export default function Home() {
       )}
 
       {actionError && !loadError && (
-        <div className="absolute left-1/2 top-14 z-[1000] max-w-[92vw] -translate-x-1/2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 shadow-sm dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+        <div className="absolute left-1/2 top-16 z-[1000] max-w-[92vw] -translate-x-1/2 rounded-full border border-[var(--neon-pink)]/40 bg-[#1a0a14]/95 px-3.5 py-1.5 text-xs font-medium text-white shadow-sm backdrop-blur">
           {actionError}
         </div>
       )}

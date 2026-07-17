@@ -7,11 +7,12 @@ export const CATEGORY_LABELS: Record<PinCategory, string> = {
   other: "Other",
 };
 
+// Neon palette matching the app's Vice-City-at-night theme.
 export const CATEGORY_COLORS: Record<PinCategory, string> = {
-  location: "#2563eb",
-  easter_egg: "#9333ea",
-  leak: "#dc2626",
-  other: "#525252",
+  location: "#22e5ff", // cyan
+  easter_egg: "#a855f7", // purple
+  leak: "#ff2d78", // pink
+  other: "#ffb020", // amber
 };
 
 export const CATEGORY_OPTIONS: { value: PinCategory; label: string }[] = (
