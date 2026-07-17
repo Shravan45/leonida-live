@@ -96,13 +96,18 @@ feature work — the app can't actually talk to Supabase yet.
 
 ## Phase 4 — Performance & launch-hype readiness (not started)
 
-- [ ] Decide caching strategy for the initial pins fetch (edge caching /
-      route handler with `Cache-Control`, given data is realtime-updated
-      client-side after load — see `node_modules/next/dist/docs/01-app/01-getting-started/08-caching.md`
-      for this Next.js version's current caching model before implementing)
+- [x] ~~Edge/route caching for the initial pins fetch~~ — **decided
+      against.** Pins load client-side directly from Supabase, not
+      through a Next.js route, so Vercel edge caching wouldn't touch
+      that path. A real fix would mean adding a caching layer in front
+      of Supabase — not worth building without real traffic to justify
+      it. Revisit only if Supabase read load actually becomes a problem.
 - [ ] Load-test / sanity-check Supabase Realtime connection limits against
       expected concurrent users
-- [ ] Bundle size check on the Leaflet client chunk
+- [x] Bundle size check on the Leaflet client chunk — ~54KB gzipped
+      (leaflet + react-leaflet + leaflet.markercluster), actually smaller
+      than the Supabase client chunk (~65KB gzip). Total client JS across
+      all chunks is ~304KB gzipped. Nothing bloated, no action needed.
 
 ## Phase 5 — Deploy ✅ done
 
