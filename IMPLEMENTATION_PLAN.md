@@ -94,7 +94,7 @@ feature work — the app can't actually talk to Supabase yet.
       auto-zoom-on-focus for <16px inputs). **Not yet visually verified
       on a real device/viewport — worth a manual check.**
 
-## Phase 4 — Performance & launch-hype readiness (not started)
+## Phase 4 — Performance & launch-hype readiness ✅ done
 
 - [x] ~~Edge/route caching for the initial pins fetch~~ — **decided
       against.** Pins load client-side directly from Supabase, not
@@ -102,8 +102,18 @@ feature work — the app can't actually talk to Supabase yet.
       that path. A real fix would mean adding a caching layer in front
       of Supabase — not worth building without real traffic to justify
       it. Revisit only if Supabase read load actually becomes a problem.
-- [ ] Load-test / sanity-check Supabase Realtime connection limits against
-      expected concurrent users
+- [x] Documented Supabase Realtime connection limits (no load-testing
+      infra built — not warranted pre-launch; just know the caps).
+      Per [supabase.com/pricing](https://supabase.com/pricing) as of
+      2026-07-16: **Free tier** (this project's current tier) = 200
+      concurrent peak connections, 2M messages/month included. **Pro/
+      Team** = 500 concurrent included, then $10 per additional 1000;
+      5M messages/month included, then $2.50/M. Each connected browser
+      tab counts as ~1 connection regardless of how many channels it
+      subscribes to (pins-changes + online-users are multiplexed over
+      one websocket). 200 concurrent is generous for early traffic —
+      upgrade to Pro before a real launch/marketing push if you expect
+      to exceed that.
 - [x] Bundle size check on the Leaflet client chunk — ~54KB gzipped
       (leaflet + react-leaflet + leaflet.markercluster), actually smaller
       than the Supabase client chunk (~65KB gzip). Total client JS across
@@ -171,6 +181,13 @@ plain `vercel` should behave as normal preview deploys; use
   via nvm's npm since Homebrew's install was blocked by broken Xcode
   CLT), linked the project, set Supabase env vars for all three
   environments, and deployed. Build succeeded, no runtime errors,
-  HTTP 200. **Live at https://leonida-live.vercel.app.** Next: user to
-  smoke-test the production URL, then revisit Phase 4 (caching/perf)
-  now that there's a real production URL to test against.
+  HTTP 200. **Live at https://leonida-live.vercel.app.** User confirmed
+  it works in production. Then closed out Phase 4: skipped edge caching
+  entirely (decided it doesn't apply to how this app fetches data — see
+  above), checked the Leaflet client bundle (~54KB gzipped, not
+  bloated), and documented Supabase Realtime's connection limits (Free
+  tier = 200 concurrent, upgrade to Pro before a real launch push).
+  **All planned phases (0–5) are now done.** Next: no fixed plan —
+  whatever the user wants to add/improve next (see Phase 3's "not yet
+  verified on a real device" note as one open thread if nothing else
+  comes up).
