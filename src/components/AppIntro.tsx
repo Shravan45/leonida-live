@@ -2,7 +2,7 @@ export default function AppIntro() {
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm text-white/70">
-        Leonida Live is a real-time fan map for GTA6 — drop pins for in-game
+        Leonida Live is a real-time fan map for GTA6. Drop pins for in-game
         locations, easter eggs, and leaks, then upvote the ones worth
         checking out. Everyone browsing sees changes live.
       </p>

@@ -32,7 +32,7 @@ export default function OnboardingModal({ suggestedName, onConfirm }: Onboarding
           Welcome to Leonida
         </span>
         <p className="text-sm text-white/60">
-          You&apos;re browsing anonymously — pick a name to show on the pins you drop, or keep
+          You&apos;re browsing anonymously. Pick a name to show on the pins you drop, or keep
           the one we picked for you.
         </p>
         <input

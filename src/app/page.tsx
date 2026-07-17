@@ -272,7 +272,7 @@ export default function Home() {
             ? ((body?.error as string | undefined) ??
                 "This looks like it violates our content guidelines.")
             : res.status === 429
-              ? "You're dropping pins too fast — wait a bit before the next one."
+              ? "You're dropping pins too fast. Wait a bit before the next one."
               : "Couldn't drop the pin. Try again.",
         );
         return;

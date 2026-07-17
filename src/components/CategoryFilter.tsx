@@ -57,7 +57,7 @@ export default function CategoryFilter({ active, onToggle }: CategoryFilterProps
                 }}
               />
               {opt.label}
-              {!isActive && <span className="text-white/25">— off</span>}
+              {!isActive && <span className="text-white/25">(off)</span>}
             </button>
           );
         })}
