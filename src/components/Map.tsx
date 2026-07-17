@@ -90,6 +90,9 @@ export default function Map({ pins, votedPinIds, onMapClick, onUpvote }: MapProp
                 {pin.description && (
                   <span className="text-sm text-white/70">{pin.description}</span>
                 )}
+                {pin.author_name && (
+                  <span className="text-xs text-white/40">by {pin.author_name}</span>
+                )}
                 <button
                   type="button"
                   onClick={() => onUpvote(pin.id)}

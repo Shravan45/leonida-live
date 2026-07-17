@@ -10,4 +10,5 @@ export interface Pin {
   created_by: string | null;
   created_at: string;
   upvote_count: number;
+  author_name: string | null;
 }

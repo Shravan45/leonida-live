@@ -176,36 +176,42 @@ export default function Home() {
       setSubmitting(true);
       setSubmitError(null);
 
-      const { data, error } = await supabase
-        .from("pins")
-        .insert({
+      // Goes through a server route (not a direct client insert) so an AI
+      // moderation check can run before the row ever lands in the DB.
+      const res = await fetch("/api/pins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           lat: draft.lat,
           lng: draft.lng,
           title: fields.title,
-          description: fields.description || null,
+          description: fields.description,
           category: fields.category,
-          created_by: user.id,
-        })
-        .select()
-        .single();
+        }),
+      });
 
       setSubmitting(false);
 
-      if (error) {
-        console.error("Failed to create pin:", error.message);
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        console.error("Failed to create pin:", body?.error ?? res.statusText);
         setSubmitError(
-          error.message.includes("rate_limited")
-            ? "You're dropping pins too fast — wait a bit before the next one."
-            : "Couldn't drop the pin. Try again.",
+          res.status === 422
+            ? ((body?.error as string | undefined) ??
+                "This looks like it violates our content guidelines.")
+            : res.status === 429
+              ? "You're dropping pins too fast — wait a bit before the next one."
+              : "Couldn't drop the pin. Try again.",
         );
         return;
       }
 
+      const { pin } = await res.json();
       setLastDropAt(Date.now());
-      setPins((prev) => [data as Pin, ...prev]);
+      setPins((prev) => [pin as Pin, ...prev]);
       setDraft(null);
     },
-    [draft, supabase, user],
+    [draft, user],
   );
 
   const handleUpvote = useCallback(

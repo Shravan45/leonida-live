@@ -26,6 +26,11 @@ code.
   toggle — neon pink/cyan/purple/amber palette (`src/lib/categories.ts`,
   CSS vars in `globals.css`), Bebas Neue display font for headers/wordmark,
   CARTO dark basemap tiles, glowing category markers, glass-panel UI.
+- **Moderation**: Anthropic API called directly (not Vercel AI Gateway —
+  requires a credit card; not OpenAI Moderation — new-account 429s), via
+  plain `fetch` to `api.anthropic.com/v1/messages` in `/api/pins`. See
+  Phase 6b for why. `ANTHROPIC_API_KEY` env var; set a spend limit in
+  Anthropic Console → Limits.
 
 ---
 
@@ -135,37 +140,51 @@ in with the user before starting:
 
 ### 6a. Reddit-style anonymous usernames
 
-- [ ] Migration `0004_profiles.sql`: `profiles` table (`id` → `auth.users`,
+- [x] Migration `0004_profiles.sql`: `profiles` table (`id` → `auth.users`,
       `display_name`), publicly readable via RLS. `generate_random_username()`
       SQL function (adjective+noun+number). `handle_new_user()` trigger on
       `auth.users` insert auto-populates a profile. Backfill any existing
-      users without one.
-- [ ] Denormalize onto pins: add `pins.author_name`, populated by a
+      users without one. **Not yet applied to the remote DB — user to run.**
+- [x] Denormalize onto pins: `pins.author_name`, populated by a
       `before insert` trigger from the pin's `created_by` profile — keeps
       it present in `postgres_changes` realtime payloads without a join.
-- [ ] Show `author_name` in the map popup; update `Pin` type.
+- [x] Show `author_name` in the map popup; updated `Pin` type.
 
 ### 6b. AI moderation on pin submission
 
-- [ ] Move pin creation from a direct client-side `supabase.insert()` to a
-      server-side Route Handler (`/api/pins`, POST) — required because the
-      moderation call needs a server context (can't safely call an LLM
-      with a secret-backed gateway from the browser), and because a hard
-      block must happen *before* the row is ever written.
-- [ ] Route handler: read the authenticated user from the server Supabase
-      client (cookies), classify `title`+`description` via the AI SDK
-      (`generateText` + `Output.object()` + zod schema
-      `{ flagged: boolean, reason?: string }`), model
-      `anthropic/claude-haiku-4.5` via Vercel AI Gateway (plain model
-      string, no provider package — auth via the `VERCEL_OIDC_TOKEN`
-      already in `.env.local` from `vercel link`, no extra API key
-      expected to be needed). Abusive/hateful only, not political.
-      If flagged, return 422 with a user-facing message; otherwise insert
-      via the server client (RLS/rate-limit trigger/author_name trigger
-      all still apply normally).
-- [ ] Update `handleSubmitPin` in `page.tsx` to POST to `/api/pins`
-      instead of calling `supabase.insert()` directly; surface the 422
-      moderation message through the existing `submitError` UI.
+- [x] Moved pin creation from a direct client-side `supabase.insert()` to
+      a server-side Route Handler (`/api/pins`, POST) — required so the
+      moderation call runs server-side before the row is ever written.
+- [x] **Provider pivoted twice during implementation** — worth remembering
+      why: (1) Vercel AI Gateway + Claude was the original plan, but the
+      Gateway hard-requires a credit card on file before serving *any*
+      request, even free-tier. (2) Switched to OpenAI's free Moderation
+      API (`omni-moderation-latest`, genuinely free, no card for the key) —
+      but new/unverified OpenAI accounts get an immediate 429 until you
+      verify, and the user's verification flow asked for a card anyway.
+      (3) Landed on calling **Anthropic's API directly** (not through
+      Vercel's Gateway) — `console.anthropic.com`, $5 free trial credit,
+      phone verification only, no card required, and it supports hard
+      spend limits (Console → Limits) which the user specifically wanted.
+      Live-tested with real clean/abusive/political-satire content before
+      committing — all three classified correctly.
+- [x] Route handler (`src/app/api/pins/route.ts`): reads the authenticated
+      user from the server Supabase client (cookies), classifies
+      `title`+`description` via a direct `fetch` to
+      `api.anthropic.com/v1/messages` (`claude-haiku-4-5-20251001`,
+      forced tool-calling for reliable structured output — no SDK
+      dependency needed). Abusive/hateful only, not political (plus two
+      unconditional safety baselines). Fails open on API errors — an
+      anonymous fan-map isn't high-stakes enough to block every pin drop
+      over an infra hiccup. If flagged, returns 422; otherwise inserts via
+      the server client (RLS/rate-limit trigger/author_name trigger all
+      still apply normally).
+- [x] Updated `handleSubmitPin` in `page.tsx` to POST to `/api/pins`
+      instead of calling `supabase.insert()` directly; the 422 moderation
+      message surfaces through the existing `submitError` UI.
+- [ ] Not yet tested end-to-end through the actual UI (only tested the
+      Anthropic API calls directly and confirmed the route typechecks/
+      compiles) — do this once 0004 is applied.
 
 ### 6c. Admin moderation + email-on-new-pin
 
